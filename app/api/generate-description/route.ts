@@ -1,37 +1,148 @@
-export const runtime = "nodejs"; // ✅ ensures server-side environment vars are accessible
+export const runtime = "nodejs";
 
 import { NextResponse } from "next/server";
 import OpenAI from "openai";
+import { createClient } from "@supabase/supabase-js";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
+const supabase = createClient(
+  process.env.SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
+
 export async function POST(req: Request) {
   try {
-    const { title, location, bedrooms, bathrooms, price } = await req.json();
+    // 🔐 1. Get token
+    const token = req.headers
+      .get("Authorization")
+      ?.replace("Bearer ", "");
 
+    if (!token) {
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 401 }
+      );
+    }
+
+    // 🔐 2. Get user
+    const { data: userData, error: authError } =
+      await supabase.auth.getUser(token);
+
+    if (authError || !userData?.user) {
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 401 }
+      );
+    }
+
+    const user = userData.user;
+
+    // 📊 3. Get profile
+    const { data: profile, error: profileError } =
+      await supabase
+        .from("profiles")
+        .select("credits_total, credits_used")
+        .eq("id", user.id)
+        .single();
+
+    if (profileError || !profile) {
+      return NextResponse.json(
+        { error: "Profile not found" },
+        { status: 404 }
+      );
+    }
+
+    const remaining =
+      (profile.credits_total || 0) -
+      (profile.credits_used || 0);
+
+    // 🚫 4. Check credits
+    if (remaining < 1) {
+      return NextResponse.json(
+        { error: "No credits left" },
+        { status: 403 }
+      );
+    }
+
+    // 📥 5. Get request data
+    const { title, location, bedrooms, bathrooms, price } =
+      await req.json();
+
+    // 🤖 6. Generate AI
     const prompt = `
-    Write a professional and engaging real estate listing description for the following property:
-    - Title: ${title}
-    - Location: ${location}
-    - Bedrooms: ${bedrooms}
-    - Bathrooms: ${bathrooms}
-    - Price: ₦${price}
-    Focus on key selling points, lifestyle appeal, and quality of the property. Keep it under 120 words.
-    `;
+Write a compelling real estate listing description for a Nigerian audience.
 
-    // ✅ Chat completion request
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [{ role: "user", content: prompt }],
+Property:
+- Title: ${title}
+- Location: ${location}
+- Bedrooms: ${bedrooms}
+- Bathrooms: ${bathrooms}
+- Price: ₦${price}
+
+Requirements:
+- Professional and persuasive
+- Highlight lifestyle and comfort
+- Simple English
+- Under 100 words
+- Suitable for WhatsApp
+
+Get started.
+`;
+
+let completion;
+
+try {
+  completion = await openai.chat.completions.create({
+    model: "gpt-4o-mini",
+    messages: [{ role: "user", content: prompt }],
+  });
+} catch (openaiError: any) {
+  console.error("OpenAI failed:", openaiError);
+
+  return NextResponse.json(
+    {
+      error:
+        openaiError?.message?.includes("quota")
+          ? "AI service unavailable. Please fund your OpenAI account."
+          : "Failed to generate description",
+    },
+    { status: 503 }
+  );
+}
+
+    const description =
+      completion.choices[0]?.message?.content?.trim() ||
+      "No description generated.";
+
+    // 💳 7. Deduct credit
+    await supabase
+      .from("profiles")
+      .update({
+        credits_used: profile.credits_used + 1,
+      })
+      .eq("id", user.id);
+      await supabase
+  .from("credit_transactions")
+  .insert({
+    user_id: user.id,
+    type: "ai_generation",
+    credits: -1,
+    description: "Generated property description",
+  });
+
+    // ✅ 8. Return result + remaining credits
+    return NextResponse.json({
+      description,
+      creditsRemaining: remaining - 1,
     });
-
-    const description = completion.choices[0]?.message?.content?.trim() || "No description generated.";
-
-    return NextResponse.json({ description });
   } catch (error: any) {
-    console.error("AI Generation Error:", error.message || error);
-    return NextResponse.json({ error: "Failed to generate description" }, { status: 500 });
+    console.error("AI Error:", error);
+    return NextResponse.json(
+      { error: "Failed to generate description" },
+      { status: 500 }
+    );
   }
 }

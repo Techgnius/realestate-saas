@@ -9,11 +9,12 @@ export default function NavBar() {
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
 
-  const links = [
-    { label: "Profile", href: "/profile" },
-    { label: "My Properties", href: "/properties" },
-    { label: "Public Listings", href: "/listings" },
-  ];
+const links = [
+  { label: "Dashboard", href: "/dashboard" },
+  { label: "My Properties", href: "/properties" },
+  { label: "Pricing", href: "/pricing" },
+  { label: "Profile", href: "/profile" },
+];
 
   return (
     <nav className="sticky top-0 z-50 w-full bg-[#001F3F] shadow-md py-4 px-8">
