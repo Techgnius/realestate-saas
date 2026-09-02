@@ -8,7 +8,10 @@ import NavBar from "../../components/NavBar";
 
 export default function ProfilePage() {
   const router = useRouter();
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<{
+  id: string;
+  email?: string;
+} | null>(null);
   const [fullName, setFullName] = useState("");
   const [companyName, setCompanyName] = useState("");
   const [bio, setBio] = useState("");
@@ -68,7 +71,7 @@ export default function ProfilePage() {
         setAvatarUrl(data.publicUrl);
         setMessage("Avatar uploaded successfully!");
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Avatar upload failed:", error);
       setMessage("Error uploading avatar.");
     } finally {

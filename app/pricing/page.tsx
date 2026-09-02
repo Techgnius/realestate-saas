@@ -11,7 +11,10 @@ export default function PricingPage() {
   const router = useRouter();
 
   const [loading, setLoading] = useState(true);
-  const [profile, setProfile] = useState<any>(null);
+  const [profile, setProfile] = useState<{
+  credits_total?: number | null;
+  credits_used?: number | null;
+} | null>(null);
   const [purchasingPack, setPurchasingPack] =
   useState<string | null>(null);
 
@@ -42,7 +45,7 @@ export default function PricingPage() {
   }
 
   const handlePurchase = async (packId: string) => {
-  try {
+   try {
     setPurchasingPack(packId);
 
     // Get current Supabase session
@@ -74,8 +77,8 @@ export default function PricingPage() {
     // const data = await response.json();
 
     const response = await fetch("/api/create-payment", {
-  method: "POST",
-  headers: {
+   method: "POST",
+   headers: {
     "Content-Type": "application/json",
     Authorization: `Bearer ${session.access_token}`,
   },
@@ -112,22 +115,6 @@ if (!data.checkoutUrl) {
 }
 
 window.location.href = data.checkoutUrl;
-
-    if (!response.ok) {
-      throw new Error(
-        data?.error ||
-        "Unable to start payment."
-      );
-    }
-
-    if (!data.checkoutUrl) {
-      throw new Error(
-        "Payment checkout URL was not returned."
-      );
-    }
-
-    // Redirect to BudPay
-    window.location.href = data.checkoutUrl;
 
   } catch (error) {
     console.error("Purchase error:", error);
@@ -214,7 +201,7 @@ window.location.href = data.checkoutUrl;
               <div className="my-6 h-px bg-gray-200" />
 
               <p className="text-gray-500">
-                You've used{" "}
+                You&apos;ve used{" "}
                 <span className="font-semibold text-[#001537]">
                   {usedCredits}
                 </span>{" "}

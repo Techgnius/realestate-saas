@@ -63,8 +63,7 @@ export default function AddPropertyPage() {
       if (error) throw error;
       setMessage("Property added successfully!");
       router.push("/properties");
-    } catch (err) {
-    //   console.error(err);
+    } catch {
       setMessage("Error saving property.");
     } finally {
       setLoading(false);
@@ -84,7 +83,7 @@ export default function AddPropertyPage() {
             <input
               type={field === "price" || field === "bedrooms" || field === "bathrooms" ? "number" : "text"}
               name={field}
-              value={(formData as any)[field]}
+              value={formData[field as keyof typeof formData]}
               onChange={handleChange}
               className="w-full border rounded-lg p-2"
               placeholder={`Enter ${field}`}

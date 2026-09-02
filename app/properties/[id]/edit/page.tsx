@@ -8,9 +8,18 @@ export default function EditPropertyPage() {
   const router = useRouter();
   const params = useParams();
   const propertyId = params.id as string;
-
-  const [user, setUser] = useState<any>(null);
-  const [property, setProperty] = useState<any>(null);
+const [user, setUser] = useState<{
+  id: string;
+  email?: string;
+} | null>(null);
+const [property, setProperty] = useState<{
+  id: string;
+  title: string;
+  description: string;
+  price: number;
+  location: string;
+  images: string[];
+} | null>(null); 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [price, setPrice] = useState<number | "">("");
@@ -77,7 +86,7 @@ export default function EditPropertyPage() {
         setImages((prev) => [...prev, data.publicUrl]);
         setMessage("Image uploaded successfully!");
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Upload failed:", error);
       setMessage("Error uploading image.");
     } finally {
@@ -91,9 +100,8 @@ export default function EditPropertyPage() {
       setImages((prev) => prev.filter((img) => img !== url));
     }
   };
-
-  // Save changes
   const handleSave = async () => {
+    if (!user) return;
     const { error } = await supabase
       .from("properties")
       .update({

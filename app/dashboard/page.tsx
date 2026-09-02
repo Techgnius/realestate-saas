@@ -16,15 +16,36 @@ import AddPropertyModal from "@/components/AddPropertyModal";
 
 export default function DashboardPage({ userId }: { userId: string }) {
   const router = useRouter();
-  const [user, setUser] = useState<any>(null);
-  const [profile, setProfile] = useState<any>(null);
+  const [user, setUser] = useState<{
+  id: string;
+  email?: string;
+} | null>(null);
+
+const [profile, setProfile] = useState<{
+  full_name?: string;
+  credits_total?: number;
+  credits_used?: number;
+  subscription_tier?: string;
+  subscription_plan?: string;
+} | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadingProperties, setLoadingProperties] = useState(true);
   const [isAddPropertyOpen, setIsAddPropertyOpen] = useState(false);
 
 
   const [searchQuery, setSearchQuery] = useState("");
-  const [properties, setProperties] = useState<any[]>([]);
+  const [properties, setProperties] = useState<
+  {
+    id: string;
+    name: string;
+    location?: string | null;
+    price?: number | null;
+    active?: boolean | null;
+    image_url?: string | null;
+    description?: string | null;
+    created_at: string;
+  }[]
+>([]);
     const getUserData = async () => {
       setLoading(true);
       const {
