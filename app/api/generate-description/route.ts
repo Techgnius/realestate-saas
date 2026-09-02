@@ -99,15 +99,17 @@ try {
     model: "gpt-4o-mini",
     messages: [{ role: "user", content: prompt }],
   });
-} catch (openaiError: any) {
+} catch (openaiError: unknown) {
   console.error("OpenAI failed:", openaiError);
+
+  const errorMessage =
+    openaiError instanceof Error ? openaiError.message : "";
 
   return NextResponse.json(
     {
-      error:
-        openaiError?.message?.includes("quota")
-          ? "AI service unavailable. Please fund your OpenAI account."
-          : "Failed to generate description",
+      error: errorMessage.includes("quota")
+        ? "AI service unavailable. Please fund your OpenAI account."
+        : "Failed to generate description",
     },
     { status: 503 }
   );
@@ -138,7 +140,7 @@ try {
       description,
       creditsRemaining: remaining - 1,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("AI Error:", error);
     return NextResponse.json(
       { error: "Failed to generate description" },
